@@ -1,0 +1,4 @@
+//moddir mechanism/mechanism_cell1/
+load_file("nrngui.hoc")
+chdir("experiment")
+load_file("run.hoc")

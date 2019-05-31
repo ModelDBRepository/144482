@@ -1,0 +1,34 @@
+// To calculate Area
+
+proc CalculateArea(){
+	Areatotal=0
+	Areasoma=0
+	Areadend=0
+	Areabasal=0
+	Areaaxon=0
+	Areaspine=0
+	forall {
+		Areatotal=Areatotal+area(0.5)*nseg
+	}
+
+	forsec "soma" { Areasoma=Areasoma+area(0.5)*nseg}
+	
+	forsec "dendrite" {	Areadend=Areadend+area(0.5)*nseg}
+	
+	forsec "basal" {	Areabasal=Areabasal+area(0.5)*nseg}
+	
+	forsec "hill" { Areaaxon=Areaaxon+area(0.5)*nseg}
+	forsec "iseg" { Areaaxon=Areaaxon+area(0.5)*nseg}
+	forsec "node" { Areaaxon=Areaaxon+area(0.5)*nseg}
+	forsec "myelin" { Areaaxon=Areaaxon+area(0.5)*nseg}
+	
+	forsec "spine" {Areaspine=Areaspine+area(0.5)}
+	forsec "neck" {Areaspine=Areaspine+area(0.5)}
+
+	printf(" total Area = %f\n",Areatotal)
+	printf(" soma = %f\n",Areasoma)
+	printf(" dendrite =%f\n",Areadend)
+	printf(" basal =%f\n",Areabasal)
+	printf(" axon = %f\n",Areaaxon)
+	printf(" spine = %f\n",Areaspine)
+} 

@@ -1,0 +1,144 @@
+//=================================================
+// Graphs (2009)
+//  by José Gómez , jfcgomez@ull.es, jfcgomez@gmail.com
+//  and by Jary Delgado 
+//=================================================
+
+objref menu, win[5]
+objref Hbox1, Hbox2, Vbox1,Vbox2
+objref menu, win[2]
+
+proc addgraph() {       // define subroutine to add a new graph
+                        // addgraph("variable", minvalue, maxvalue, color)
+    windex = $1-1
+    win[windex] = new Graph()
+    win[windex].size(0,tstop,$3,$4)
+    win[windex].xaxis()
+    win[windex].yaxis()
+    win[windex].label(0.1,1.0)
+    win[windex].addvar($s2,$5,0) //$5=color
+	graphList[0].append(win[windex])
+}
+
+proc plots(){
+	
+	Vbox1=new VBox()
+	Vbox1.intercept(1)
+		refwin=1
+	   	addgraph(refwin,"soma.v(0.5)",-80,40,2)
+		//win[refwin-1].addvar("dendrite[0].v(0.5)",1,0) 
+		//win[refwin-1].addvar("dendrite[1].v(0.5)",3,0) 
+		//win[refwin-1].addvar("dendrite[2].v(0.5)",4,0) 
+		//win[refwin-1].addvar("dendrite[3].v(0.5)",5,0) 
+		//win[refwin-1].addvar("dendrite[4].v(0.5)",6,0) 
+		//win[refwin-1].addvar("dendrite[5].v(0.5)",9,0) 
+		//win[refwin-1].addvar("spine.v(0.5)",7,0) 
+		refwin=2   
+		addgraph(refwin,"dendrite[0].cai(0.5)",0,0.0005,1)
+		win[refwin-1].addvar("dendrite[1].cai(0.5)",2,0)
+		win[refwin-1].addvar("dendrite[2].cai(0.5)",3,0)
+		win[refwin-1].addvar("dendrite[3].cai(0.5)",4,0)	
+		win[refwin-1].addvar("dendrite[4].cai(0.5)",9,0)	
+		win[refwin-1].addvar("dendrite[5].cai(0.5)",5,0)	
+		win[refwin-1].addvar("spine.cai(0.5)",7,0)
+		win[refwin-1].addvar("neck.cai(0.5)",6,0)
+		win[refwin-1].addvar("soma.cai(0.5)",6,8)
+	Vbox1.intercept(0)
+	Vbox1.map()
+}
+
+
+numfolder=0
+proc make_menu() {
+    $o1 = new VBox()
+    $o1.intercept(1)
+	xpanel("Buttons", 0)
+    xlabel("Run the Simulation.")
+    xbutton("Run", " run()")
+   	xpvalue("Number of Folder ", &numfolder,1)
+	xbutton("Save", "saveall_data(numfolder)")
+	xpanel()
+	xpanel("ButtonsSave", 0)
+	xlabel("Run and Save Multi-protocols")
+	xbutton("Auto Runs","runProtocols()")
+	xpanel()
+    $o1.intercept(0)
+    $o1.map($s2, 400, 0, -1, -1)
+}
+
+objref graphs[6], figSTDP, tmp
+
+proc STDP_figure() {
+   
+	Vbox2=new VBox()
+	Vbox2.intercept(1)
+		Hbox1=new HBox()
+		Hbox1.intercept(1)
+			graphs[0] = new Graph()
+			graphList[0].append(graphs[0])
+			graphs[0].addvar("Calcium signal (mM)", "spine.cai(0.5)", 3, 1)
+			graphs[1] = new Graph()
+			graphList[0].append(graphs[1])
+			graphs[1].addvar("% of K*", "kin.n", 3, 1)
+			graphs[1].addvar("Maximum", "maxltp", 2, 6)
+			graphs[2] = new Graph()
+			graphList[0].append(graphs[2])
+			graphs[2].addvar("Integral % of K*", "ltpint", 3, 1)
+		Hbox1.intercept(0)
+		Hbox1.map()
+	
+		Hbox2=new HBox()
+		Hbox2.intercept(1)	
+			graphs[3] = new Graph()
+			graphList[0].append(graphs[3])
+			graphs[3].addvar("% of m*", "kin.m", 3, 1)
+			graphs[3].addvar("% of h*", "kin.h", 4, 1)
+			graphs[4] = new Graph()
+			graphList[0].append(graphs[4])
+			graphs[4].addvar("% of Ph*", "ltd", 3, 1)
+			graphs[4].addvar("Maximum", "maxltd", 2, 6)
+			graphs[5] = new Graph()
+			graphList[0].append(graphs[5])
+			graphs[5].addvar("Intetral % of Ph*", "ltdint", 3, 1)
+		Hbox2.intercept(0)
+		Hbox2.map()	
+	Vbox2.intercept(0)
+	Vbox2.map()
+	
+	graphs[0].size(0, 250, 0, 0.014)
+    graphs[1].size(0, 250, 0, 1)
+    graphs[2].size(0, 250, 0, 4)
+    graphs[3].size(0, 250, 0, 1)
+	graphs[4].size(0, 250, 0, 1)
+	graphs[5].size(0, 250, 0, 1)
+}
+
+objref graphs_current[2]
+
+proc graphs_currents(){
+	graphs_current[0] = new Graph()
+	graphList[0].append(graphs_current[0])
+	graphs_current[0].addvar("soma.ina_naf( 0.5 )", 3,0) //changed to naf from nafsoma
+	graphs_current[0].addvar("soma.ik_kasoma( 0.5 )", 2,0)
+	graphs_current[0].addvar("soma.ik_kdrsoma( 0.5 )", 1,0)
+
+	graphs_current[1] = new Graph()
+	graphList[0].append(graphs_current[1])
+	graphs_current[1].addvar("soma.ik_kahp( 0.5 )", 1,0)
+	graphs_current[1].addvar("soma.ik_kc( 0.5 )", 4, 0)
+	graphs_current[1].addvar("soma.ik_k2soma( 0.5 )", 3, 0)
+	graphs_current[1].addvar("soma.ik_km( 0.5 )", 2, 0)
+	graphs_current[1].addvar("spine.ica( 0.5 )", 7, 0)
+	graphs_current[1].addvar("soma.ica( 0.5 )", 6, 0)
+}
+
+
+
+
+make_menu(menu, "Click to run")
+plots()
+STDP_figure()
+graphs_currents()
+
+
+

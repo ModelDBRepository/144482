@@ -1,0 +1,595 @@
+//=================================================
+//  Biophysical Model of Model cell layer 2/3 (2009)
+//  by José Gómez , jfcgomez@ull.es, jfcgomez@gmail.com
+//  and by Jary Delgado 
+//=================================================
+
+xopen("../morphology/cell_1.hoc")
+
+tstop=250
+
+proc init() {
+    finitialize(v_init)
+    fcurrent()
+	
+    t = -1000 // ms 
+    dt = 1    // ms
+	access spine	
+    while (t<0) {
+        fadvance()
+		kin.trans=ampasyn.C
+		ltp = 0.0
+		ltd = 0.0
+		maxltp = 0.0
+		maxltd = 0.0
+		ltpint=0
+		ltdint=0
+    }
+	dt = 0.025
+}
+
+proc advance(){
+	access spine
+	fadvance()
+	ampasyn.Cmax=synNeurotransMax
+	kin.trans=ampasyn.C
+    ltp=kin.n
+    ltd=kin.m * kin.h
+	if (ltp>maxltp) {maxltp=ltp}
+    if (ltd>maxltd) {maxltd=ltd}
+	ltpint=ltpint+ltp*dt
+	ltdint=ltdint+ltd*dt
+}
+
+
+synOnset=90
+synAMPA=0.002  //(S/cm2)
+synNMDA=0.004	//(S/cm2) of 0.01
+synNeurotransMax=1 //(mM)
+proc set_parameters_Synaptic_Kinase() {  // Here it should be synaptic receptors???
+    
+    ampasyn.onset = synOnset
+    ampasyn.delta = -100
+    ampasyn.periodpre = 0
+    ampasyn.periodpost = 0
+    ampasyn.nbrepre = 0
+    ampasyn.nbrepost = 0
+    ampasyn.tau0 = 0.34
+    ampasyn.tau1 = 8
+    ampasyn.gmax = synAMPA	//********   CHECK THIS VALUE
+	
+	
+    spine {
+        onset_NMDAKIT = synOnset
+        period_NMDAKIT = 0
+        nbre_NMDAKIT = 0 //1
+        tau0_NMDAKIT = 2
+        tau1_NMDAKIT = 80
+        cao_NMDAKIT = 2.5
+        gmax_NMDAKIT =synNMDA //0.04 	//********   CHECK THIS VALUE
+
+    }
+    kin.an = 1e12 //3e9
+    kin.bn = 1
+    kin.am = 200
+    kin.bm = 0.1
+    kin.ah = 1
+    kin.bh = 0.4
+	access spine
+	ampasyn.Cmax=synNeurotransMax
+
+}
+
+
+proc Null_activeG(){
+	
+	
+	forsec "soma" {
+			gbar_naf  = 0		//Changed this to naf from nafsoma
+			gbar_nap  = 0
+			gbar_kdrsoma  = 0 			
+ 			gbar_kasoma   = 0  		
+			gbar_kc   = 0			
+ 			gbar_kahp = 0
+			gbar_k2soma   = 0
+			gbar_km   = 0		
+			gbar_cat  = 0	
+			gbar_casoma   = 0
+			gbar_ar   = 0	
+	}
+	forsec "dendrite" {
+			gbar_naf  = 0
+			gbar_nap  = 0                  
+			gbar_kdr  = 0       
+			gbar_ka   = 0
+			gbar_kc   = 0
+			gbar_kahp = 0
+			gbar_k2   = 0
+			gbar_km   = 0
+			gbar_cat  = 0
+			gbar_ca   = 0
+			gbar_ar   = 0
+	}
+	forsec "basal" {
+			gbar_naf  = 0
+			gbar_nap  = 0                  
+			gbar_kdr  = 0       
+			gbar_ka   = 0
+			gbar_kc   = 0
+			gbar_kahp = 0
+			gbar_k2   = 0
+			gbar_km   = 0
+			gbar_cat  = 0
+			gbar_ca   = 0
+			gbar_ar   = 0
+	}	
+	forsec "myelin"{
+			gbar_naf  = 0
+			gbar_kdr  = 0
+			gbar_ka   = 0		
+	}
+	forsec "node"{
+			gbar_naf  = 0
+			gbar_kdr  = 0
+			gbar_ka   = 0
+ 	}
+	forsec "hill"{
+			gbar_kdrsoma  = 0
+			gbar_nafsoma  = 0
+			gbar_kasoma   = 0
+			gbar_k2soma   = 0
+	}
+	forsec "iseg"{
+			gbar_kdrsoma  = 0
+			gbar_nafsoma  = 0
+			gbar_kasoma   = 0
+			gbar_k2soma   = 0
+	}
+	forsec "spine" {
+			gbar_naf  = 0
+			gbar_na1  = 0
+			gbar_nap  = 0
+			gbar_kdr  = 0
+			gbar_ka   = 0
+			gbar_kc   = 0
+			gbar_kahp = 0
+			gbar_k2   = 0
+			gbar_km   = 0
+			gbar_cat  = 0
+			gbar_ca   = 0
+			gbar_ar   = 0
+		}
+	forsec "neck" {
+			gbar_naf  = 0
+			gbar_na1  = 0
+			gbar_nap  = 0
+			gbar_kdr  = 0
+			gbar_ka   = 0
+			gbar_kc   = 0
+			gbar_kahp = 0
+			gbar_k2   = 0
+			gbar_km   = 0
+			gbar_cat  = 0
+			gbar_ca   = 0
+			gbar_ar   = 0
+	}
+	
+}
+
+
+proc LoadCell(){
+	jose=1
+	josek=1
+	dnap=1
+	forsec "soma" {
+			
+			gbar_naf  = 100e-3*2			//146.67e-3*1.5       //Changed to naf from nafsoma
+			gbar_nap  = dnap * 0.0032
+			gbar_kdrsoma  = 0.01 			//0.01 changed June 3rd // d*30e-3//125e-3
+ 			gbar_kasoma   = 0.03  		// 0.055changed June 4th //a*35e-3 
+			gbar_kc   = 0.005			//3000 changed June 3rd  //c*15e-3//c*12e-3
+ 			gbar_kahp = 0.01
+			gbar_k2soma   = 7.4e-3 // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+			gbar_km   = 4e-3		// 0.5 * 2.5e-4 *spines_corr changed June 3rd
+			gbar_cat  = 3e-3	//6.8e-3 changed June 3rd
+			gbar_casoma  =  1e-3
+			gbar_ar   = 0//0.25e-3
+
+			
+			
+	}
+
+//---------------------- end soma -------------------------------
+
+// ---------------------- Trunk and Apical Dendrite ------------------------------
+
+
+		
+	dendrite[0]{
+			gbar_naf  =jose*1.1e-2*spines_corr //1.1e-2*spines_corr 
+			gbar_nap  = 0                  
+			gbar_kdr  = 0*spines_corr       
+			gbar_ka   = 0*spines_corr 						//changed June 3rd
+			gbar_kc   = 0	//0.5e-5*spines_corr 					//changed June 3rd
+			gbar_kahp = 5e-4*spines_corr
+			gbar_k2   = 1e-3*spines_corr                      
+			gbar_km   = 5e-5*spines_corr             
+			gbar_cat  = 2.5e-4*spines_corr 							//changed June 3rd
+			gbar_ca   = .03*spines_corr									//1.5e-2*spines_corr  changed June 3rd
+			gbar_ar   = 0 // 0.25e-3*spines_corr
+	}
+	dendrite[1] {
+			gbar_naf  = jose*2.5e-4*spines_corr       
+			gbar_nap  = 0
+			gbar_kdr  = 0									//4e-3*spines_corr       changed June 3rd
+			gbar_ka   = 2.5e-4*spines_corr
+			gbar_kc   = 0								// 0	changed June 3rd
+			gbar_kahp = 0.5e-3*spines_corr
+			gbar_k2   = 5e-4*spines_corr							//9e-3             changed June 3rd
+			gbar_km   = 7.5e-5*spines_corr
+			gbar_cat  = 1.9e-4*spines_corr									//3e-4*spines_corr changed June 3rd
+			gbar_ca   = 2.25e-2*spines_corr							//7.5e-2*spines_corr	changed June 3rd
+			gbar_ar   = 0// 0.25e-3*spines_corr
+
+	}
+	dendrite[2] {
+			gbar_naf  = jose*9e-3*spines_corr							//2.05e-2*spines_corr   changed June 3rd
+			gbar_nap  = 0
+			gbar_kdr  = 0.001
+			gbar_ka   = 0.003
+			gbar_kc   = 0.001									//0 changed June 3rd
+			gbar_kahp = 0
+			gbar_k2   = 0.004									//2e-3*spines_corr changed June 3rd
+			gbar_km   = 0.001
+			gbar_cat  = 2.5e-4
+			gbar_ca   = 0.1
+			gbar_ar   = 0 // 0.25e-3*spines_corr
+
+	}
+	dendrite[3] {
+			gbar_naf  = jose*2.3e-2*spines_corr						//3.75e-2*spines_corr changed June 3rd
+			gbar_nap  = 0
+			gbar_kdr  = 0.001
+			gbar_ka   = 3.25e-3*spines_corr									//4.5e-3*spines_corr  changed June 3rd
+			gbar_kc   = 1e-2									//0*0.5e-5*spines_corr changed June 3rd
+			gbar_kahp = 1e-2
+			gbar_k2   = 1e-3									//4.5e-3*spines_corr changed June 3rd
+			gbar_km   = 1e-3*spines_corr
+			gbar_cat  = 1e-4
+			gbar_ca  = 4.5e-2
+			gbar_ar   = 0 // 0.25e-3*spines_corr
+
+	}
+	dendrite[4] {
+			gbar_naf  = jose*1e-2
+			gbar_nap  = 0
+			gbar_kdr  = 5e-3
+			gbar_ka   = 3.25e-3
+			gbar_kc   = 1e-2											//0 changed June 3rd
+			gbar_kahp = 0*0.5e-3*spines_corr
+			gbar_k2   = 1.2e-3											//9e-3 changed June 3rd
+			gbar_km   = 1e-3
+			gbar_cat  = 1e-4
+			gbar_ca   = 0
+			gbar_ar   = 0 // 0.25e-3*spines_corr
+	}
+	dendrite[5] {
+			gbar_naf  =jose* 0.005   						// 0	Changed June 3rd
+			gbar_nap  = 0
+			gbar_kdr  = 0.001							//1e-2           Changed June 3rd
+			gbar_ka   =	3e-3							// 0         Changed June 3rd
+			gbar_kc   = 1e-3 
+			gbar_kahp = 0*0.5e-4*spines_corr
+			gbar_k2   = 1.2e-3							//9e-3         Changed June 3rd
+			gbar_km   = 5e-4
+			gbar_cat  = 1e-4
+			gbar_ca   = 0
+			gbar_ar   = 0 // 0.25e-3*spines_corr
+	}
+	dendrite[6] {
+			gbar_naf  = jose*1e-2
+			gbar_nap  = 0
+			gbar_kdr  = 5e-3
+			gbar_ka   = 3.25e-3
+			gbar_kc   = 1e-2											//0 changed June 3rd
+			gbar_kahp = 0*0.5e-3*spines_corr
+			gbar_k2   = 1.2e-3											//9e-3 changed June 3rd
+			gbar_km   = 1e-3
+			gbar_cat  = 1e-4
+			gbar_ca   = 0
+			gbar_ar   = 0 // 0.25e-3*spines_corr
+	}
+	dendrite[7] {
+			gbar_naf  = jose*0.005   						// 0	Changed June 3rd
+			gbar_nap  = 0
+			gbar_kdr  = 0.001							//1e-2           Changed June 3rd
+			gbar_ka   =	3e-3							// 0         Changed June 3rd
+			gbar_kc   = 1e-3 
+			gbar_kahp = 0*0.5e-4*spines_corr
+			gbar_k2   = 1.2e-3							//9e-3         Changed June 3rd
+			gbar_km   = 5e-4
+			gbar_cat  = 1e-4
+			gbar_ca   = 0
+			gbar_ar   = 0 // 0.25e-3*spines_corr
+
+	}
+	dendrite[8] {
+			gbar_naf  =jose* 0.005   						// 0	Changed June 3rd
+			gbar_nap  = 0
+			gbar_kdr  = 0.001							//1e-2           Changed June 3rd
+			gbar_ka   =	3e-3							// 0         Changed June 3rd
+			gbar_kc   = 1e-3 
+			gbar_kahp = 0*0.5e-4*spines_corr
+			gbar_k2   = 1.2e-3							//9e-3         Changed June 3rd
+			gbar_km   = 5e-4
+			gbar_cat  = 1e-4
+			gbar_ca   = 0
+			gbar_ar   = 0 // 0.25e-3*spines_corr
+
+	}
+	dendrite[9] {
+			gbar_naf  =jose* 0.005   						// 0	Changed June 3rd
+			gbar_nap  = 0
+			gbar_kdr  = 0.001							//1e-2           Changed June 3rd
+			gbar_ka   =	3e-3							// 0         Changed June 3rd
+			gbar_kc   = 1e-3 
+			gbar_kahp = 0*0.5e-4*spines_corr
+			gbar_k2   = 1.2e-3							//9e-3         Changed June 3rd
+			gbar_km   = 5e-4
+			gbar_cat  = 1e-4
+			gbar_ca   = 0
+			gbar_ar   = 0 // 0.25e-3*spines_corr
+
+	}
+
+	
+// -------------------End Trunk and Apical Dendrites ------------------------------
+
+
+// ---------------- Basal  Dentrites ---------------------------------------
+	forsec "basal" {
+			gbar_naf  = 0.1					//6.25e-3*spines_corr //////////////
+			gbar_nap  = 0                            //dnap * 0.0032 * gbar_naf*spines_corr
+			gbar_kdr  = 5e-3					//0*spines_corr
+			gbar_ka   = 6e-3
+			gbar_kc   = 5e-3					//0.5e-5*spines_corr 
+			gbar_kahp = 1e-2		                //gAHPoff*0.1e-3*spines_corr
+			gbar_k2   = 9e-3                                 //0.1e-3*spines_corr//////////////
+			gbar_km   = 4e-3	                      //2.5 * 1.5e-3 * 2*spines_corr
+			gbar_cat  = 0*spines_corr /////////////////////////////////
+			gbar_ca  = .01*spines_corr /////////////////////////////////
+			gbar_ar   = 0*1e-5 // 0.25e-3*spines_corr
+	}	
+	
+// -------------End Basal Dendrites------------------------------
+
+//----------------- Axon ----------------------------------------
+	
+	jose=1
+	josek=1
+	
+	forsec "myelin"{
+			gbar_naf  = 0.05				//400e-3 Changed June 3rd
+			gbar_kdr  = 0.005 //210.526e-3	
+			gbar_ka   = 0.01
+			
+	}
+	forsec "node"{
+			gbar_naf  = 400e-3
+			gbar_kdr  = .05					//d*.01 //210.526e-3/	
+			gbar_ka   = .1					//0.05
+ 
+		
+	}
+	forsec "hill"{
+			gbar_kdrsoma  = .005	//800e-3//400e-3
+			gbar_nafsoma  = 250e-3 
+			gbar_kasoma   = 1e-2
+			gbar_k2soma   = 1e-3  
+
+	}
+	forsec "iseg"{
+			gbar_kdrsoma  = josek*.005	//800e-3//400e-3
+			gbar_nafsoma  = jose*250e-3 
+			gbar_kasoma   = 1e-2
+			gbar_k2soma   = 1e-3 
+	}
+//------------------- End Axon ------------------------------	
+	
+//-------------------- Spine --------------------------------
+
+	forsec "spine" {
+			gbar_naf  = jose*6.25e-3*spines_corr
+			gbar_na1  = 0
+			gbar_nap  = 0
+			gbar_kdr  = d*0.5*3e-2*spines_corr
+			gbar_ka   = a*2e-3*spines_corr
+			gbar_kc   = 0*c*0.5*1e-4*spines_corr
+			gbar_kahp = 0*gAHPoff*0.1e-4*spines_corr
+			gbar_k2   = 0*k_2*0.75e-2*spines_corr
+			gbar_km   = 0*m*0.75e-2 *spines_corr
+			gbar_cat  = 6e-4
+			gbar_ca   = .05
+			gbar_ar   = 0 //0.25e-3*spines_corr
+
+		}
+		
+	forsec "neck" {
+			gbar_naf  = jose*6.25e-3*spines_corr
+			gbar_na1  = 0
+			gbar_nap  = 0
+			gbar_kdr  = d*0.5*3e-2*spines_corr
+			gbar_ka   = 0*a*2e-3*spines_corr
+			gbar_kc   = 0*c*0.5*1e-4*spines_corr
+			gbar_kahp = 0*gAHPoff*0.1e-4*spines_corr
+			gbar_k2   = 0*k_2*0.75e-2*spines_corr
+			gbar_km   = 0*m*0.75e-2 *spines_corr
+			gbar_cat  = 0.5*4e-5*spines_corr /////////////////////////////////
+			gbar_ca   = 0.5*5e-4*spines_corr /////////////////////////////////
+			gbar_ar   = 0 //0.25e-3*spines_corr
+
+	}
+//------------------End  Spine ----------------------------------
+
+}
+
+
+objectvar st1, st2, st3
+proc set_experiment() {
+	access iseg
+	st1=new IClamp(1)
+	st1.dur = 1000+tstop	//ms
+	st1.del = -1000			//ms
+	st1.amp = 0.14			//nA
+	
+	access iseg
+	st2=new IClamp(1)
+	st2.dur = 1				//ms
+	st2.del = 100			//ms
+	st2.amp = 1				//pA
+
+	access iseg
+	st3=new IClamp(1)
+	st3.dur = 1				//ms
+	st3.del = 110			//ms
+	st3.amp = 0				//pA
+}
+
+
+proc Stim_panel() {	
+	xpanel("Stimulus Parameters")
+	xlabel("Stimulu Protocols and EPSP")
+	xvalue("tstop","tstop",1,"st1.dur = 1000+tstop")
+	xlabel("------- Stim 1 ------") 
+	xvalue("Stim1 Duration","st1.dur",1)
+	xvalue("Stim1 Delay","st1.del",1)
+	xvalue("Stim1 Amp","st1.amp",1)
+	xlabel("------- Stim 2 ------") 
+	xvalue("Stim2 Duration","st2.dur",1)
+	xvalue("Stim2 Delay","st2.del",1)
+	xvalue("Stim2 Amp","st2.amp",1)
+	xlabel("------- Stim 3 ------") 
+	xvalue("Stim3 Duration","st3.dur",1)
+	xvalue("Stim3 Delay","st3.del",1)
+	xvalue("Stim3 Amp","st3.amp",1)
+	
+	xlabel("------- Synpase in spine ------") 
+	xvalue("EPSP Delay","synOnset",1,"set_parameters_Synaptic_Kinase()")
+	xvalue("EPSP g_AMPA","synAMPA",1,"set_parameters_Synaptic_Kinase()")
+	xvalue("EPSP g_NMDA","synNMDA",1,"set_parameters_Synaptic_Kinase()")
+	xvalue("Max. neurotransmitter concent. ","synNeurotransMax",1,"set_parameters_Synaptic_Kinase()")
+	xlabel("----------------------------") 
+	xbutton("All active conductances = 0", "Null_activeG()")
+	xbutton("Initial active conducances", "LoadCell()") 
+	xpanel()
+}
+
+//---------------------
+proc Parameter_Channels() {	
+	xpanel("Parameter")
+	xlabel("----- kdrsoma hill iseg -----")
+	xvalue("gkdrsoma","soma.gbar_kdrsoma",1)
+	xvalue("v1","soma.v1_kdrsoma",1)
+	xvalue("v2","soma.v2_kdrsoma",1)
+	
+	xlabel("----- kasoma  hill iseg -----")
+	xvalue("gbar_kasoma ","soma.gbar_kasoma ",1)
+	xvalue("v1 ","soma.v1_kasoma ",1)
+	xvalue("v2 ","soma.v2_kasoma ",1)
+	xvalue("v3 ","soma.v3_kasoma ",1)
+	xvalue("v4 ","soma.v4_kasoma ",1)
+	xvalue("v5 ","soma.v5_kasoma ",1)
+	xvalue("v6 ","soma.v6_kasoma ",1)
+	xvalue("v7 ","soma.v7_kasoma ",1)
+	
+	xlabel("----- k2soma  hill iseg -----")
+	xvalue("gbar_k2soma ","soma.gbar_k2soma ",1)
+	xvalue("v1 ","soma.v1_k2soma ",1)
+	xvalue("v2 ","soma.v2_k2soma ",1)
+	xvalue("v3 ","soma.v3_k2soma ",1)
+	xvalue("v4 ","soma.v4_k2soma ",1)
+	xvalue("v5 ","soma.v5_k2soma ",1)
+	xvalue("v6 ","soma.v6_k2soma ",1)
+
+	
+	
+	xlabel("----- knafsoma  hill iseg -----")
+	xvalue("gbar_naf","soma.gbar_naf",1) // Changed to naf from nafsoma
+	//xvalue("v11","soma.v11_naf",1) // Changed to naf from nafsoma
+	//xvalue("v22","soma.v22_naf",1)  // Changed to naf from nafsoma
+	//xvalue("v33","soma.v33_naf",1)  // Changed to naf from nafsoma
+	//xvalue("v44","soma.v44_naf",1)  // Changed to naf from nafsoma
+	//xvalue("fastNashift","soma.fastNashift_naf",1)  // Changed to naf from nafsoma
+	
+	
+	
+	xlabel("-----HVA casoma  -----")
+	xvalue("gbar_casoma ","soma.gbar_casoma ",1)
+	xvalue("v1 ","soma.v1_casoma ",1)
+	xvalue("v2 ","soma.v2_casoma ",1)
+	xvalue("v3 ","soma.v3_casoma ",1)
+	xvalue("v4 ","soma.v4_casoma ",1)
+	
+	
+	
+	
+	xpanel()
+}
+
+
+proc Parameter_Channels2() {	
+	xpanel("Parameter2")
+	
+	xlabel("-----HVA casoma  -----")
+	xvalue("gbar_casoma ","soma.gbar_casoma ",1)
+	xvalue("v5 ","soma.v5_casoma ",1)
+	xvalue("v6 ","soma.v6_casoma ",1)
+	xvalue("v7 ","soma.v7_casoma ",1)
+	xvalue("v8 ","soma.v8_casoma ",1)
+	xpanel()
+}
+
+
+
+
+//---------------------
+
+
+
+
+
+
+set_parameters_Synaptic_Kinase()
+set_experiment()
+xopen("graphs.hoc")
+xopen("savedata.hoc")
+xopen("CalculateArea.hoc")
+CalculateArea()
+xopen("Protocols.hoc")
+access spine
+Parameter_Channels()
+Parameter_Channels2()
+
+
+objref Hbox3,Vbox3,Vbox4
+	Hbox3=new HBox()
+	Hbox3.intercept(1)
+		make_MorphPanel()
+		Vbox3=new VBox()
+		Vbox3.intercept(1)
+			mechanism_panel()
+			make_Fpanel()
+			make_menu(menu, "Click to run")
+		Vbox3.intercept(0)
+		Vbox3.map()
+		Vbox4=new VBox()
+		Vbox4.intercept(1)
+		
+		Stim_panel()
+		Vbox4.intercept(0)
+		Vbox4.map()
+	Hbox3.intercept(0)
+	Hbox3.map()
+	
+
+

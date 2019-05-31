@@ -1,0 +1,68 @@
+//=================================================
+// Protocols (2009)
+//  by José Gómez , jfcgomez@ull.es, jfcgomez@gmail.com
+//  and by Jary Delgado 
+//=================================================
+
+objref possitionSpine
+
+
+NumberRuns=29
+
+possitionSpine=new Vector(NumberRuns)
+
+//possitionSpine.x[0]=20
+//possitionSpine.x[1]=50
+//possitionSpine.x[2]=80
+//possitionSpine.x[3]=100
+//possitionSpine.x[4]=120
+//possitionSpine.x[5]=150
+//possitionSpine.x[6]=200
+//possitionSpine.x[7]=220
+//possitionSpine.x[8]=250
+
+
+possitionSpine.x[0]=20
+possitionSpine.x[1]=30
+possitionSpine.x[2]=40
+possitionSpine.x[3]=50
+possitionSpine.x[4]=60
+possitionSpine.x[5]=70
+possitionSpine.x[6]=80
+possitionSpine.x[7]=90
+possitionSpine.x[8]=100
+possitionSpine.x[9]=110
+possitionSpine.x[10]=120
+possitionSpine.x[11]=130
+possitionSpine.x[12]=140
+possitionSpine.x[13]=150
+possitionSpine.x[14]=160
+possitionSpine.x[15]=170
+possitionSpine.x[16]=180
+possitionSpine.x[17]=190
+possitionSpine.x[18]=200
+possitionSpine.x[19]=210
+possitionSpine.x[20]=220
+possitionSpine.x[21]=230
+possitionSpine.x[22]=240
+possitionSpine.x[23]=250
+possitionSpine.x[24]=260
+possitionSpine.x[25]=270
+possitionSpine.x[26]=280
+possitionSpine.x[27]=290
+possitionSpine.x[28]=300
+
+
+
+
+
+proc runProtocols(){
+	jj=0
+	for jj=0,NumberRuns-1{
+		position_spine(int(possitionSpine.x[jj]/10))
+		
+		run()
+		saveall_data(possitionSpine.x[jj])	
+	}
+}
+

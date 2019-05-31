@@ -1,0 +1,970 @@
+//=================================================
+// Cell layer 2/3 morphology (2009)
+// Similar to Mainen et al (Neuron, 1995)
+// Modified  
+// by José Gómez,  jfcgomez@ull.es, jfcgomez@gmail.com
+// and by Jary Delgado ,jyamir@gmail.com
+//=================================================
+
+//--------- Load the mechanism
+nrn_load_dll("../mechanism/mechanism_cell1/nrnmech.dll")  
+
+pi=3.141593
+
+objref Trunk,Apical
+
+n_axon_seg = 5
+n_dend_seg = 10
+n_basal_seg = 5
+create soma
+create iseg,hill,myelin[n_axon_seg],node[n_axon_seg],basal[n_basal_seg]
+create spine
+create neck
+create dendrite[n_dend_seg]
+
+//**************************************************************
+//*********************   Morphology   *************************
+//**************************************************************
+
+proc create_cell(){
+
+// ------- Soma  ---------
+	soma {
+		L=20
+		equiv_diam = 15
+		diam = equiv_diam
+		nseg=7
+	}
+// ------- Axon  ---------
+
+	if (numarg()) equiv_diam = $1
+
+	iseg { // initial segment between hillock + myelin
+		L = 15
+		nseg = 5
+		diam = 1    // see Sloper and Powell 1982, Fig.71 // Changed June 3rd 
+	}
+
+	hill {                
+		L = 10
+		nseg = 5
+		diam(0:1) = 4*iseg.diam:iseg.diam
+	}
+
+	for i=0,n_axon_seg-1 { // construct myelinated axon with nodes of ranvier
+		myelin[i] {         // myelin element
+			nseg = 5
+			L = 100
+			diam = iseg.diam         
+		}
+		node[i] {           // nodes of Ranvier
+			nseg = 1
+			L = 1.0           
+			diam = iseg.diam*.75       // nodes are thinner than axon
+		}
+	}
+ 
+	hill connect iseg(0), 1
+	iseg connect myelin[0](0), 1
+	myelin[0] connect node[0](0), 1
+	for i=0,n_axon_seg-2  { 
+		node[i] connect myelin[i+1](0), 1 
+		myelin[i+1] connect node[i+1](0), 1
+	}
+	
+// ------- Spine  ---------
+
+      // Based on the "Folding factor" described in
+      // Jack et al (1989), Major et al (1994)
+      // note, this assumes active channels are present in spines 
+      // at same density as dendrites
+
+	spine{
+		L=0.9
+		diam=L
+	}
+
+// ------- Neck  ---------
+
+	neck{
+		L=1.0
+		diam=0.28
+	}
+
+// ------- Trunk and Apical Dendrites  ---------
+
+	diamfactor=1
+	diam_cte=1.3
+	diam_start_init=1.3
+	diam_start=diam_start_init
+	diam_finish_init=1
+	diam_finish=diam_finish_init
+	nn=10
+	
+	dendrite[0].L=50
+	dendrite[0].nseg=int(dendrite[0].L/nn)
+	dendrite[0].diam=3.5
+	
+	dendrite[1].L=50
+	dendrite[1].nseg=int(dendrite[1].L/nn)
+	dendrite[1].diam=1.3
+	
+	dendrite[2].L=50
+	dendrite[2].nseg=int(dendrite[2].L/nn)
+	dendrite[2].diam=1.3
+	
+	dendrite[3].L=50
+	dendrite[3].nseg=int(dendrite[3].L/nn)
+	dendrite[3].diam=1.3
+	
+	dendrite[4].L=100
+	dendrite[4].nseg=int(dendrite[i].L/nn)
+	dendrite[4].diam(0:1)=diam_start_init:diam_finish_init		
+	
+	dendrite[6].L=100
+	dendrite[6].nseg=int(dendrite[i].L/nn)
+	dendrite[6].diam(0:1)=diam_start_init:diam_finish_init
+	
+	dendrite[5].L=50
+	dendrite[5].nseg=int(dendrite[3].L/nn)
+	dendrite[5].diam=diam_finish_init
+	
+	dendrite[7].L=50
+	dendrite[7].nseg=int(dendrite[3].L/nn)
+	dendrite[7].diam=diam_finish_init
+	
+	dendrite[8].L=50
+	dendrite[8].nseg=int(dendrite[3].L/nn)
+	dendrite[8].diam=diam_finish_init
+	
+	dendrite[9].L=50
+	dendrite[9].nseg=int(dendrite[3].L/nn)
+	dendrite[9].diam=diam_finish_init
+	
+	for i=0,n_dend_seg-3  { 
+      dendrite[i] connect dendrite[i+1](0), 1 
+    }
+	dendrite[3] connect dendrite[4](0), 1
+	dendrite[3] connect dendrite[6](0), 1
+	dendrite[4] connect dendrite[5](0), 1
+	dendrite[4] connect dendrite[7](0), 1
+	dendrite[6] connect dendrite[8](0), 1
+	dendrite[6] connect dendrite[9](0), 1
+
+	Trunk=new SectionList()
+	for i=0,3 dendrite[i] Trunk.append()
+
+	Apical= new SectionList()
+	for i=4,9 dendrite[i] Apical.append()
+
+	
+// ------- Basal Dendrites  ---------
+
+	for i=0, n_basal_seg-1{
+		basal[i].L=200
+		basal[i].nseg=5
+		basal[i].diam=1
+	}	
+	
+		for i=0,n_basal_seg-1  { 
+      connect basal[i](0), soma(0)
+    }
+		
+	soma connect hill(0), 0.5
+	connect spine(0), neck(1)
+	connect dendrite[0](0), soma(1)	
+
+} 
+//***************  End create_cell()  *********************	
+	
+
+
+	
+proc update_spine(){
+	spine.L=spine.diam
+}
+
+proc update_dendrite(){
+	nn=10
+	dendrite[0].L=50
+	dendrite[0].nseg=int(dendrite[0].L/nn)
+	dendrite[0].diam=3.5*diamfactor
+	
+	dendrite[1].L=50
+	dendrite[1].nseg=int(dendrite[1].L/nn)
+	dendrite[1].diam=1.3*diamfactor
+	
+	dendrite[2].L=50
+	dendrite[2].nseg=int(dendrite[2].L/nn)
+	dendrite[2].diam=1.3*diamfactor
+	
+	dendrite[3].L=50
+	dendrite[3].nseg=int(dendrite[3].L/nn)
+	dendrite[3].diam=1.3*diamfactor
+	
+	dendrite[4].L=100
+	dendrite[4].nseg=int(dendrite[4].L/nn)
+	diam_start=diam_start_init*diamfactor
+	diam_finish=diam_finish_init*diamfactor
+	dendrite[4].diam(0:1)=diam_start:diam_finish 
+}
+
+proc update_dendrite_nseg(){
+	nn=10
+	for i=0,n_dend_seg-1 {
+		dendrite[i].nseg=int(dendrite[i].L/nn)
+	}
+	position_spine()
+}
+
+
+proc update_dendrite3(){
+	dendrite[5].diam=diam_cte
+	dendrite[7].diam=diam_cte
+	dendrite[8].diam=diam_cte
+	dendrite[9].diam=diam_cte
+}
+
+proc update_dendrite4(){
+	dendrite[4].diam(0:1)=diam_start:diam_finish
+	dendrite[6].diam(0:1)=diam_start:diam_finish
+}
+
+//**************************************************************
+//***************** End Cell Morphology   **********************
+//**************************************************************
+
+
+//**************************************************************
+//********************  CELL MECHANISMS   **********************
+//**************************************************************
+
+// --------------------------------------------------------------
+// Passive & Active Membrane
+// --------------------------------------------------------------
+
+v_init    = -75
+celsius   = 37
+
+//------  passive ---------------
+ra          = 250 	//150//250		//ohm-cm
+ranoSOMA	= 250 	//150//100		//ohm-cm  //Changed June 3rd
+rm          = 50000 //12000//50000	//ohm-cm2	//12000
+rmDendrite  = 50000
+rmMyelin	= 50000
+rmSpine	= 25000
+rmNode	= 50 	//ohm-cm2 = g_pas_node  = 0.02	//S/cm2
+c_m         = 0.8		//uF/cm2
+cm_myelin   = 0.04	//uF/cm2
+dnap   	= 0
+dkc    	= 0
+//---------------------------------
+
+
+objref fl
+objectvar kin,  ampasyn   //,c
+
+proc init_cell() {
+
+// --------------------------------------------------------------
+// passive 
+// --------------------------------------------------------------
+	forsec "soma" {
+		insert pas
+		Ra=ra 			//ohm-cm
+		cm = c_m
+		g_pas=1/rm
+		e_pas = v_init	//mV
+	}
+	forsec "dendrite" {
+		insert pas
+		Ra=ra			//ohm-cm
+		cm = c_m 
+		g_pas=(1/rmDendrite)
+		e_pas = v_init	//mV
+	}
+	forsec "spine" {
+		insert pas
+		Ra=ranoSOMA		//ohm-cm
+		cm = c_m*2
+		g_pas=1/rmSpine
+		e_pas = v_init	//mV
+	}
+	forsec "neck" {
+		insert pas
+		Ra=ranoSOMA		//ohm-cm
+		cm = c_m
+		g_pas=1/rmSpine
+		e_pas = v_init	//mV
+	}
+	forsec "iseg"{
+		insert pas
+		Ra=100			//ohm-cm
+		cm = c_m
+		g_pas=1/rm
+		e_pas = v_init	//mV
+	} 
+  	forsec "hill"{
+		insert pas
+		Ra=100 //ohm-cm
+		cm = c_m
+		g_pas=1/rm
+		e_pas = v_init	//mV
+	}
+	forsec "myelin"{
+		insert pas
+		Ra=ranoSOMA		//ohm-cm
+		cm = cm_myelin
+		g_pas=1/rm
+		e_pas = v_init	//mV	
+	}	
+	forsec "node"{
+		insert pas
+		Ra=ranoSOMA		//ohm-cm
+		cm = c_m
+		g_pas=1/rmNode
+		e_pas = v_init	//mV	
+	}	
+	forsec "basal" {
+		insert pas
+		Ra=ra*3			//ohm-cm  		*Changed June 3rd*
+		cm = c_m 
+		g_pas=1/rmDendrite
+		e_pas = v_init	//mV
+	}
+	
+	spines_corr = 1
+	method = 2
+	if(method==1){
+		spines_corr = 0.5
+		forsec "dendrite" {
+			L = L*2
+			Ra = Ra/2
+		}
+		forsec "basal" {
+			L = L*2
+			Ra = Ra/2
+		}
+		print "Spine correction with method 1"
+	}
+	if(method=2){
+		spines_corr= 2
+		
+		dendrite[0]{
+			cm = c_m*(spines_corr - 1.3) // 	*Changed June 3rd*
+			g_pas = 1/((rmDendrite*1.15)/spines_corr)
+		}
+		dendrite[1]{
+			cm = c_m*(spines_corr - 0.7) // 	*Changed June 3rd*
+			g_pas = 1/((rmDendrite*1.3)/spines_corr)
+		}
+		dendrite[2]{
+			cm = c_m*(spines_corr - 0.4) // 	*Changed June 3rd*
+			g_pas = 1/((rmDendrite*1.45)/spines_corr)
+		}
+		dendrite[3]{
+			cm = c_m*(spines_corr - 0.2) // 	*Changed June 3rd*
+			g_pas = 1/((rmDendrite*1.7)/spines_corr)
+		}
+		dendrite[4]{
+			cm = c_m*(spines_corr - 0.2) // 	*Changed June 3rd*
+			g_pas = 1/((rmDendrite*2)/spines_corr)
+		}
+		dendrite[5]{
+			cm = c_m*(spines_corr - 0.2) // 	*Changed June 3rd*
+			g_pas = 1/((rmDendrite*2.15)/spines_corr)
+		}
+		dendrite[6]{
+			cm = c_m*(spines_corr - 0.2) // 	*Changed June 3rd*
+			g_pas = 1/((rmDendrite*2)/spines_corr)
+		}
+		dendrite[7]{
+			cm = c_m*(spines_corr - 0.2) // 	*Changed June 3rd*
+			g_pas = 1/((rmDendrite*2.15)/spines_corr)
+		}
+		dendrite[8]{
+			cm = c_m*(spines_corr - 0.2) // 	*Changed June 3rd*
+			g_pas = 1/((rmDendrite*2.15)/spines_corr)
+		}
+		dendrite[9]{
+			cm = c_m*(spines_corr - 0.2) // 	*Changed June 3rd*
+			g_pas = 1/((rmDendrite*2.15)/spines_corr)
+		}
+
+		forsec "basal" {
+			cm = c_m*(spines_corr) // 	*Changed June 3rd*
+			g_pas = 1/(rmDendrite/spines_corr)
+		}
+		print "Spine correction with method 2"
+	
+	}
+	
+	
+	
+// --------------------------------------------------------------
+// active
+// --------------------------------------------------------------	
+	
+gAHPoff= 0
+d = .1	
+a = .4
+c = 333333
+b = .35
+b2 = 1
+k_2 = .4
+m = .01
+
+//--------------------  soma -------------------------------------	
+	forsec "soma" {
+			insert cad
+			insert naf // Changed 
+			insert nap 
+			insert kdrsoma 
+			insert kasoma 
+			insert kc
+			insert kahp 
+			insert k2soma 
+			insert km 
+			insert cat 
+			insert casoma 
+			insert ar
+			
+			ceiling_cad = 1000
+			phi_cad   = 52 / 2e-3
+			beta_cad  = 1 / 20 //100	 // in the paper beta = 50 [ms]
+
+			gbar_naf  = 200e-3			//146.67e-3*1.5       //1.25 changed June 3rd
+			gbar_nap  = dnap * 0.0032
+			gbar_kdrsoma  = 2.5e-3*spines_corr 			//0.01 changed June 3rd // d*30e-3//125e-3 Jose changed this one value from 0.01
+ 			gbar_kasoma   = 0.05  		// 0.055changed June 4th //a*35e-3 
+			gbar_kc   = 0.005			//3000 changed June 3rd  //c*15e-3//c*12e-3
+ 			gbar_kahp = 0.01
+			gbar_k2soma   = 7.4e-3
+			gbar_km   = 0		// 0.5 * 2.5e-4 *spines_corr Jose changed this one value from 5e-3 to 0
+			gbar_cat  = 0	//6.8e-3    Jose changed this one value from 3e-3 to 0
+			gbar_casoma  = 1.8  //Jose changed this one value from 1.25
+			gbar_ar   = 0//0.25e-3
+
+			ek = -85
+			
+	}
+
+//---------------------- end soma -------------------------------
+
+// ---------------------- Trunk and Apical Dendrite ------------------------------
+
+	forsec "dendrite" {
+			insert cad
+			insert naf 
+			insert nap 
+			insert kdr 
+			insert ka 
+			insert kc
+			insert kahp 
+			insert k2 
+			insert km 
+			insert cat 
+			insert ca 
+			insert ar
+
+			ek = -85
+	}
+		
+		
+	dendrite[0]{
+			phi_cad   = 52 / 2e-3/spines_corr
+			beta_cad  = 1 / 100
+
+			gbar_naf  = 1.5e-2*spines_corr 
+			gbar_nap  = 0                  
+			gbar_kdr  = 0*spines_corr       
+			gbar_ka   = 0*spines_corr 						//changed June 3rd
+			gbar_kc   = 0	//0.5e-5*spines_corr 					//changed June 3rd
+			gbar_kahp = 5e-4*spines_corr
+			gbar_k2   = 1e-3*spines_corr                      
+			gbar_km   = 5e-5*spines_corr             
+			gbar_cat  = 1.25e-3*spines_corr 							//changed June 3rd
+			gbar_ca   = 0.05*spines_corr									//1.5e-2*spines_corr  changed June 3rd
+			gbar_ar   = 0 // 0.25e-3*spines_corr
+	}
+	dendrite[1] {
+			phi_cad   = 52 / 2e-3/spines_corr
+			beta_cad  = 1 / 100
+
+			gbar_naf  = 6e-3*spines_corr       
+			gbar_nap  = 0
+			gbar_kdr  = 0									//4e-3*spines_corr       changed June 3rd
+			gbar_ka   = 2.5e-4*spines_corr
+			gbar_kc   = 0								// 0	changed June 3rd
+			gbar_kahp = 0.5e-3*spines_corr
+			gbar_k2   = 5e-4*spines_corr							//9e-3             changed June 3rd
+			gbar_km   = 7.5e-5*spines_corr
+			gbar_cat  = 0.5e-3*spines_corr									//3e-4*spines_corr changed June 3rd
+			gbar_ca   = 0.04*spines_corr							//7.5e-2*spines_corr	changed June 3rd
+			gbar_ar   = 0// 0.25e-3*spines_corr
+
+	}
+	dendrite[2] {
+			phi_cad   = 52 / 2e-3/spines_corr
+			beta_cad  = 1 / 100
+
+			gbar_naf  = 1e-2*spines_corr							//2.05e-2*spines_corr   changed June 3rd
+			gbar_nap  = 0
+			gbar_kdr  = 0.001
+			gbar_ka   = 0.003
+			gbar_kc   = 0.001									//0 changed June 3rd
+			gbar_kahp = 0
+			gbar_k2   = 0.004									//2e-3*spines_corr changed June 3rd
+			gbar_km   = 0.001
+			gbar_cat  = 4.5e-4*spines_corr
+			gbar_ca   = 0.04*spines_corr
+			gbar_ar   = 0 // 0.25e-3*spines_corr
+
+	}
+	dendrite[3] {
+			phi_cad   = 52 / 2e-3/spines_corr
+			beta_cad  = 1 / 100
+
+			gbar_naf  = 2.3e-2*spines_corr						//3.75e-2*spines_corr changed June 3rd
+			gbar_nap  = 0
+			gbar_kdr  = 0.001
+			gbar_ka   = 3.25e-3*spines_corr									//4.5e-3*spines_corr  changed June 3rd
+			gbar_kc   = 1e-2									//0*0.5e-5*spines_corr changed June 3rd
+			gbar_kahp = 1e-2
+			gbar_k2   = 1e-3									//4.5e-3*spines_corr changed June 3rd
+			gbar_km   = 1e-3*spines_corr
+			gbar_cat  = 2e-4*spines_corr
+			gbar_ca   = 4e-2*spines_corr
+			gbar_ar   = 0 // 0.25e-3*spines_corr
+
+	}
+	dendrite[4] {
+			phi_cad   = 52 / 2e-3/spines_corr
+			beta_cad  = 1 / 100
+
+			gbar_naf  = 8.75e-3*spines_corr
+			gbar_nap  = 0
+			gbar_kdr  = 5e-3
+			gbar_ka   = 3.25e-3
+			gbar_kc   = 1e-2											//0 changed June 3rd
+			gbar_kahp = 0*0.5e-3*spines_corr
+			gbar_k2   = 1.2e-3											//9e-3 changed June 3rd
+			gbar_km   = 1e-3
+			gbar_cat  = 0.5e-4*spines_corr
+			gbar_ca   = 0
+			gbar_ar   = 0 // 0.25e-3*spines_corr
+	}
+	dendrite[5] {
+			phi_cad   = 52 / 2e-3/spines_corr
+			beta_cad  = 1 / 100
+
+			gbar_naf  = 0.0015*spines_corr  						// 0	Changed June 3rd
+			gbar_nap  = 0
+			gbar_kdr  = 0.001							//1e-2           Changed June 3rd
+			gbar_ka   =	3e-3							// 0         Changed June 3rd
+			gbar_kc   = 1e-3 
+			gbar_kahp = 0*0.5e-4*spines_corr
+			gbar_k2   = 1.2e-3							//9e-3         Changed June 3rd
+			gbar_km   = 5e-4
+			gbar_cat  = 0.5e-4*spines_corr
+			gbar_ca   = 0
+			gbar_ar   = 0 // 0.25e-3*spines_corr
+	}
+	dendrite[6] {
+			phi_cad   = 52 / 2e-3/spines_corr
+			beta_cad  = 1 / 100
+
+			gbar_naf  = 8.75e-3*spines_corr
+			gbar_nap  = 0
+			gbar_kdr  = 5e-3
+			gbar_ka   = 3.25e-3
+			gbar_kc   = 1e-2											//0 changed June 3rd
+			gbar_kahp = 0*0.5e-3*spines_corr
+			gbar_k2   = 1.2e-3											//9e-3 changed June 3rd
+			gbar_km   = 1e-3
+			gbar_cat  = 0.5e-4*spines_corr
+			gbar_ca   = 0
+			gbar_ar   = 0 // 0.25e-3*spines_corr
+
+	}
+	dendrite[7] {
+			phi_cad   = 52 / 2e-3/spines_corr
+			beta_cad  = 1 / 100
+
+			gbar_naf  = 0.0015*spines_corr  						// 0	Changed June 3rd
+			gbar_nap  = 0
+			gbar_kdr  = 0.001							//1e-2           Changed June 3rd
+			gbar_ka   =	3e-3							// 0         Changed June 3rd
+			gbar_kc   = 1e-3 
+			gbar_kahp = 0*0.5e-4*spines_corr
+			gbar_k2   = 1.2e-3							//9e-3         Changed June 3rd
+			gbar_km   = 5e-4
+			gbar_cat  = 0.5e-4*spines_corr
+			gbar_ca   = 0
+			gbar_ar   = 0 // 0.25e-3*spines_corr
+	}
+	dendrite[8] {
+			phi_cad   = 52 / 2e-3/spines_corr
+			beta_cad  = 1 / 100
+
+			gbar_naf  = 0.0015*spines_corr  						// 0	Changed June 3rd
+			gbar_nap  = 0
+			gbar_kdr  = 0.001							//1e-2           Changed June 3rd
+			gbar_ka   =	3e-3							// 0         Changed June 3rd
+			gbar_kc   = 1e-3 
+			gbar_kahp = 0*0.5e-4*spines_corr
+			gbar_k2   = 1.2e-3							//9e-3         Changed June 3rd
+			gbar_km   = 5e-4
+			gbar_cat  = 0.5e-4*spines_corr
+			gbar_ca   = 0
+			gbar_ar   = 0 // 0.25e-3*spines_corr
+
+	}
+	dendrite[9] {
+			phi_cad   = 52 / 2e-3/spines_corr
+			beta_cad  = 1 / 100
+
+			gbar_naf  = 0.0015*spines_corr  						// 0	Changed June 3rd
+			gbar_nap  = 0
+			gbar_kdr  = 0.001							//1e-2           Changed June 3rd
+			gbar_ka   =	3e-3							// 0         Changed June 3rd
+			gbar_kc   = 1e-3 
+			gbar_kahp = 0*0.5e-4*spines_corr
+			gbar_k2   = 1.2e-3							//9e-3         Changed June 3rd
+			gbar_km   = 5e-4
+			gbar_cat  = 0.5e-4*spines_corr
+			gbar_ca   = 0
+			gbar_ar   = 0 // 0.25e-3*spines_corr
+
+	}
+
+	
+// -------------------End Trunk and Apical Dendrites ------------------------------
+
+
+// ---------------- Basal  Dentrites ---------------------------------------
+	forsec "basal" {
+			insert cad
+			insert naf 
+			insert nap 
+			insert kdr 
+			insert ka 
+			insert kc
+			insert kahp 
+			insert k2 
+			insert km 
+			insert cat 
+			insert ca 
+			insert ar
+
+			phi_cad   = 52 / 2e-3/spines_corr
+			beta_cad  = 1 / 100
+			
+			gbar_naf  = 0.1					//6.25e-3*spines_corr //////////////
+			gbar_nap  = 0                            //dnap * 0.0032 * gbar_naf*spines_corr
+			gbar_kdr  = 5e-3					//0*spines_corr
+			gbar_ka   = 6e-3
+			gbar_kc   = 5e-3					//0.5e-5*spines_corr 
+			gbar_kahp = 1e-2		                //gAHPoff*0.1e-3*spines_corr
+			gbar_k2   = 9e-3                                 //0.1e-3*spines_corr//////////////
+			gbar_km   = 4e-3	                      //2.5 * 1.5e-3 * 2*spines_corr
+			gbar_cat  = 0*spines_corr /////////////////////////////////
+			gbar_ca  = .01*spines_corr /////////////////////////////////
+			gbar_ar   = 0*1e-5 // 0.25e-3*spines_corr
+
+			ek = -85
+			
+	}	
+	
+// -------------End Basal Dendrites------------------------------
+
+//----------------- Axon ----------------------------------------
+	forsec "myelin"{
+			insert ka
+			insert naf
+			insert kdr
+
+			gbar_naf  = 0.05				//400e-3 Changed June 3rd
+			gbar_kdr  = 0.005 //210.526e-3	
+			gbar_ka   = 0.01
+			
+			ek = -85			
+	}
+	forsec "node"{
+			insert ka
+			insert naf
+			insert kdr
+
+			gbar_naf  = 400e-3
+			gbar_kdr  = .05					//d*.01 //210.526e-3/	
+			gbar_ka   = .1					//0.05
+ 
+			ek = -85
+	}
+	forsec "hill"{
+			insert nafsoma
+			insert kdrsoma 
+			insert kasoma 
+			insert k2soma
+			
+			gbar_kdrsoma  = .005	//800e-3//400e-3
+			gbar_nafsoma  = 250e-3 
+			gbar_kasoma   = 1e-2
+			gbar_k2soma   = 1e-3  
+
+			ek = -85	
+	}
+	forsec "iseg"{
+			insert nafsoma
+			insert kdrsoma 
+			insert kasoma 
+			insert k2soma
+			 
+			gbar_kdrsoma  = .005	//800e-3//400e-3
+			gbar_nafsoma  = 250e-3 
+			gbar_kasoma   = 1e-2
+			gbar_k2soma   = 1e-3 
+
+			ek = -85			
+	}
+//------------------- End Axon ------------------------------	
+	
+//-------------------- Spine --------------------------------
+
+	forsec "spine" {
+			insert cad
+			insert naf 
+			insert na1
+			insert nap
+			insert kdr 
+			insert ka 
+			insert kc
+			insert kahp 
+			insert k2 
+			insert km 
+			insert cat 
+			insert ca 
+			insert ar
+			
+			
+			lneck_cad=neck.L
+			sneck_cad=pi*neck.diam*neck.diam/4
+			vspine_cad=pi*spine.diam*spine.diam*spine.L/4
+
+			gbar_naf  = 6.25e-3*spines_corr
+			gbar_na1  = 0
+			gbar_nap  = 0
+			gbar_kdr  = d*0.5*3e-2*spines_corr
+			gbar_ka   = a*2e-3*spines_corr
+			gbar_kc   = 0*c*0.5*1e-4*spines_corr
+			gbar_kahp = 0*gAHPoff*0.1e-4*spines_corr
+			gbar_k2   = 0*k_2*0.75e-2*spines_corr
+			gbar_km   = 0*m*0.75e-2 *spines_corr
+			gbar_cat  = 1e-3
+			gbar_ca   = .2
+			gbar_ar   = 0 //0.25e-3*spines_corr
+
+		}
+		
+	forsec "neck" {
+			insert cad
+			insert naf 
+			insert na1
+			insert nap
+			insert kdr 
+			insert ka 
+			insert kc
+			insert kahp 
+			insert k2 
+			insert km 
+			insert cat 
+			insert ca 
+			insert ar
+			
+			
+			phi_cad   = 52 / 2e-3
+			beta_cad  = 1 / 20
+
+			gbar_naf  = 6.25e-3*spines_corr
+			gbar_na1  = 0
+			gbar_nap  = 0
+			gbar_kdr  = d*0.5*3e-2*spines_corr
+			gbar_ka   = 0*a*2e-3*spines_corr
+			gbar_kc   = 0*c*0.5*1e-4*spines_corr
+			gbar_kahp = 0*gAHPoff*0.1e-4*spines_corr
+			gbar_k2   = 0*k_2*0.75e-2*spines_corr
+			gbar_km   = 0*m*0.75e-2 *spines_corr
+			gbar_cat  = 0.5*4e-5*spines_corr /////////////////////////////////
+			gbar_ca   = 0.5*5e-4*spines_corr /////////////////////////////////
+			gbar_ar   = 0 //0.25e-3*spines_corr
+
+			ek = -85
+			
+		}
+//------------------End  Spine ----------------------------------
+
+//------------------------------------------------------------  
+  
+  forall if(ismembrane("k_ion"))	ek = -85
+  forall if(ismembrane("na_ion"))	ena = 50
+  forall if(ismembrane("ca_ion"))	eca = 125
+
+  
+  
+// --------------------------------------------------------------
+// NMDAR, AMPAR and KINASE proteins at the spine
+// --------------------------------------------------------------
+// create synapse
+	
+	access spine
+	insert NMDAKIT
+	gmax_NMDAKIT = 0.0003
+	ampasyn=new AMPAKIT(0.5)
+	kin=new KINASE(0.5)
+
+// --------------------------------------------------------------
+// Point Conductance Noise Model at the soma
+// --------------------------------------------------------------
+	soma{
+		fl = new Gfluct2(0.5)
+    	      fl.E_e	= 0 		//(mV)	: reversal potential of excitatory conductance
+		fl.E_i	= -75 		//(mV)	: reversal potential of inhibitory conductance
+		fl.g_e0	=0 //0.0121 	//(umho)	: average excitatory conductance
+		fl.g_i0	=0 // 0.0573 	//(umho)	: average inhibitory conductance
+		fl.std_e =0 // 0.012 //(umho)	: standard dev of excitatory conductance
+		fl.std_i =0 // 0.0264 //(umho)	: standard dev of inhibitory conductance
+		fl.tau_e = 2.728	//(ms)	: time constant of excitatory conductance
+		fl.tau_i = 10.49	//(ms)	: time constant of inhibitory conductance 
+		fl.g_seed=1
+	}
+ 
+} // end init_cell()
+
+
+// ##############################################################
+proc mechanism_panel(){
+	xpanel("CELL :Parameters Mechanism")
+	xlabel("Cell Pasive Parameters")
+	xvalue("v_init","v_init",1,"init_cell()")
+	xvalue("Ra  (ohm-cm)","ra",1,"init_cell()")
+	xvalue("Ra no Soma (ohm-cm)","ranoSOMA",1,"init_cell()")
+	xvalue("Rm, (ohm-cm2)","rm",1,"init_cell()")
+	xvalue("Cm","c_m",1,"init_cell()")
+	xvalue("Cm myelin","cm_myelin",1,"init_cell()")
+	xvalue("dnap ","dnap",1,"init_cell()")
+	xvalue("dkc","dkc",1,"init_cell()")
+	xpanel()
+
+}
+
+proc make_Fpanel() {			// make panel
+	xpanel("Fluctuating Conductance model")
+	xlabel ("Point Conductance Model")
+	xvalue("E_e","fl.E_e",1)
+	xvalue("E_i","fl.E_i",1)
+	xvalue("g_e0","fl.g_e0",1)
+	xvalue("g_i0","fl.g_i0",1)
+	xvalue("std_e","fl.std_e",1)
+	xvalue("std_i","fl.std_i",1)
+	xvalue("tau_e","fl.tau_e",1)
+	xvalue("tau_i","fl.tau_i",1)
+	xvalue("seed","fl.g_seed",1)
+	xpanel()
+}
+
+
+//---- To see the morphology
+objref s
+
+proc View_morphology(){
+	topology()
+	s=new Shape()
+	s.show(0)
+}
+
+
+
+proc make_MorphPanel(){
+	xpanel("Cell Morphology")
+	xlabel(" Cell Morphology ")
+	xbutton("View Morphology","View_morphology()")
+	xlabel(" ---  DENDRITE  ---")
+	xvalue("dendrite[0].diam","dendrite[0].diam",1)
+	xvalue("dendrite[1].diam","dendrite[1].diam",1)
+	xvalue("dendrite[2].diam","dendrite[2].diam",1)
+	xvalue("dendrite[3].diam","dendrite[3].diam",1)
+	xvalue("dendrite[5,7,8 & 9].diam","diam_cte",1,"update_dendrite3()")
+	
+	xlabel("  ")
+	xvalue("dendrite[4 & 6].diam start","diam_start",1,"update_dendrite4()")
+	xvalue("dendrite[4 & 6].diam finish","diam_finish",1,"update_dendrite4()")
+	
+	xlabel(" To Multiplicate all default diam. by ")
+	xpvalue("factor : ",&diamfactor,1,"update_dendrite()")
+	xlabel(" ")
+	xvalue("dendrite[0].L","dendrite[0].L",1,"update_dendrite_nseg()")
+	xvalue("dendrite[1].L","dendrite[1].L",1,"update_dendrite_nseg()")
+	xvalue("dendrite[2].L","dendrite[2].L",1,"update_dendrite_nseg()")
+	xvalue("dendrite[3].L","dendrite[3].L",1,"update_dendrite_nseg()")
+	xvalue("dendrite[4].L","dendrite[4].L",1,"update_dendrite_nseg()")
+	xlabel("  ")
+	xlabel(" ---  SPINE  ---")
+	xvalue("spine.diam","spine.diam",1,"update_spine()")
+	xlabel(" ---  NECK  ---")
+	xvalue("neck.diam","neck.diam",1)
+	xvalue("neck.L","neck.L",1)
+	xvalue("Position (x10 um)","p_neck",1,"position_spine(p_neck)")
+	xlabel("  ")
+	xlabel(" ---  SOMA  ---")
+	xvalue("soma.diam","soma.diam",1)
+	xvalue("soma.L","soma.L",1)
+	xpanel()
+
+
+}
+
+p_neck=0
+proc position_spine(){ //$1= is the possition of the spine x10
+	p_neck=$1
+	p_temp=0
+	nn=10
+	i=0
+	if(p_neck>=1){
+		while (p_neck>p_temp){
+			p_temp=p_temp+dendrite[i].nseg
+			i=i+1
+		}
+	
+		if(i<=6){ //6 is the number of dendrites
+			neck disconnect()
+			if(i<=n_dend_seg){
+				p_dendrite=(1/dendrite[i-1].nseg)*(dendrite[i-1].nseg-p_temp+p_neck)
+			}else{
+				p_neck=p_temp
+				p_dendrite=1
+			}
+			connect neck(0), dendrite[i-1](p_dendrite)
+		}else{
+			p_neck=p_neck-1
+		}
+		
+	}else{
+		p_neck=1
+	}
+		
+}
+
+//---------------------------------------------------------
+//---------------------------------------------------------
+create_cell()
+update_dendrite()
+
+init_cell()
+
+
+p_neck=5 //int(dendrite[0].nseg+dendrite[1].nseg+dendrite[2].nseg+dendrite[3].nseg*0.5)
+position_spine(p_neck)
+
+
+
+

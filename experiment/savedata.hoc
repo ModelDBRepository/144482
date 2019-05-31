@@ -1,0 +1,132 @@
+//=================================================
+// Save data (2009)
+//  by José Gómez , jfcgomez@ull.es, jfcgomez@gmail.com
+//  and by Jary Delgado 
+//=================================================
+
+objref fileref
+objref vsoma, vspine, vdend0, vdend1, vdend2, vdend3, vdend4, vdend5
+objref cai0, cai1, cai2, cai3, cai4, cai5, cai6, cai7, cai8
+objref vltp, vmaxltp, vltd, vmaxltd, vltpint, vltdint  
+
+// --------- Voltage ---------------------------------
+vsoma=new Vector(tstop/dt)  // record voltage at soma and store in a vector vsoma  
+vsoma.record(&soma.v(0.5))
+
+vspine=new Vector(tstop/dt)			
+vspine.record(&spine.v(0.5))
+
+vdend0=new Vector(tstop/dt)			
+vdend0.record(&dendrite[0].v(0.5))
+
+vdend1=new Vector(tstop/dt)			
+vdend1.record(&dendrite[1].v(0.5))
+
+vdend2=new Vector(tstop/dt)			
+vdend2.record(&dendrite[2].v(0.5))
+
+vdend3=new Vector(tstop/dt)			
+vdend3.record(&dendrite[3].v(0.5))
+
+vdend4=new Vector(tstop/dt)			
+vdend4.record(&dendrite[4].v(0.5))
+
+vdend5=new Vector(tstop/dt)			
+vdend5.record(&dendrite[5].v(0.5))
+
+// --------- Calcium ---------------------------------
+cai0=new Vector(tstop/dt)          // record cai in dendite and store in a vector 
+cai0.record(&dendrite[0].cai(0.5))
+
+cai1=new Vector(tstop/dt)          
+cai1.record(&dendrite[1].cai(0.5))
+
+cai2=new Vector(tstop/dt)                    
+cai2.record(&dendrite[2].cai(0.5))
+
+cai3=new Vector(tstop/dt)                    
+cai3.record(&dendrite[3].cai(0.5))
+
+cai4=new Vector(tstop/dt)
+cai4.record(&dendrite[4].cai(0.5))
+
+cai5=new Vector(tstop/dt)   
+cai5.record(&dendrite[5].cai(0.5))
+
+cai6=new Vector(tstop/dt)  
+cai6.record(&spine.cai(0.5))
+
+cai7=new Vector(tstop/dt)       
+cai7.record(&neck.cai(0.5))
+
+cai8=new Vector(tstop/dt)   
+cai8.record(&soma.cai(0.5))
+
+//----------- LTP and LTD ------------------------------
+vltp=new Vector(tstop/dt)		// record ltp and store in a vector 
+vltp.record(&ltp)
+
+vmaxltp=new Vector(tstop/dt)	// record max ltp and store in a vector 
+vmaxltp.record(&maxltp)
+
+vltd=new Vector(tstop/dt)		// record ltd and store in a vector 
+vltd.record(&ltd)
+
+vmaxltd=new Vector(tstop/dt)	// record max ltd and store in a vector 
+vmaxltd.record(&maxltd)
+
+vltpint=new Vector(tstop/dt)		// record integral ltp and store in a vector 
+vltpint.record(&ltpint)
+
+vltdint=new Vector(tstop/dt)		// record integral ltp and store in a vector 
+vltdint.record(&ltdint)
+
+//--------------------------------------------------------
+
+
+
+
+
+//**********************************************************
+//************ saveall_data(folder_number_tag) *************
+//**********************************************************
+proc saveall_data(){  //$1= is the number tag of the folder
+	// -------  save voltage
+	saverecord("data","vsoma",vsoma,$1)
+	saverecord("data","vspine",vspine,$1)
+	saverecord("data","vdend0",vdend0,$1)
+	saverecord("data","vdend1",vdend1,$1)
+	saverecord("data","vdend2",vdend2,$1)
+	saverecord("data","vdend3",vdend3,$1)
+	saverecord("data","vdend4",vdend4,$1)
+	saverecord("data","vdend5",vdend5,$1)
+	// -------  save calcium
+	saverecord("data","caidendrite[0]",cai0,$1)
+	saverecord("data","caidendrite[1]",cai1,$1)
+	saverecord("data","caidendrite[2]",cai2,$1)
+	saverecord("data","caidendrite[3]",cai3,$1)
+	saverecord("data","caidendrite[4]",cai4,$1)
+	saverecord("data","caidendrite[5]",cai5,$1)
+	saverecord("data","caispine",cai6,$1)
+	saverecord("data","caisoma",cai8,$1)
+	// -------  save LTP and LTD parameters	
+	saverecord("data","ltp",vltp,$1)
+	saverecord("data","maxltp",vmaxltp,$1)
+	saverecord("data","ltd",vltd,$1)
+	saverecord("data","maxltd",vmaxltd,$1)	
+}
+
+//***************************************************************************
+//*** saverecord("folder name","file name",data_vector,folder_number_tag) ***
+//***************************************************************************
+proc saverecord(){ 
+	strdef tmp_str
+	sprint(tmp_str, "mkdir -p %s_%g", $s1,$4)  // make the data directory
+	system(tmp_str)
+	sprint(tmp_str, "%s_%g", $s1,$4)
+	fileref=new File()			// Save the SOMA record
+	sprint(tmp_str, "%s/%s.txt",tmp_str,$s2)
+	fileref.wopen(tmp_str)
+	$o3.printf(fileref, "%f\n")
+	fileref.close()   
+}
