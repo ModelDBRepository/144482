@@ -6,9 +6,9 @@ state gates spike-timing-dependent plasticity. J Neurosci. 2010 Nov
 
 Folders:
 
-"..\morphology\" : contains the morphology of the model cell 
-"..\mechanism\"  : contains mechanisms of the model cell 
-"..\experiment\" : contains experiments and data of simulations 
+"..\morphology\" : contains the morphology of the model cell
+"..\mechanism\"  : contains mechanisms of the model cell
+"..\experiment\" : contains experiments and data of simulations
 
 
 Instructions:
@@ -18,7 +18,7 @@ Instructions:
 2- To Compile the mechanisms, you have to execute "clean-compile.bat"
 file in folder "..\mechanism\mechanism_cell1\" (for mswin).  For
 linux/unix compile the mod files with nrnivmodl.
-3- Simulations:    
+3- Simulations:
 
    a) Execute "run.hoc" from "..\experiment\" folder.
    b) Fit the morphology variable (diameter and length of dendrites
@@ -43,3 +43,9 @@ linux/unix compile the mod files with nrnivmodl.
 
 For questions:
 José Francisco Gómez González, jfcgomez@ull.edu.es
+
+Changelog
+=========
+
+* 20220924: Update MOD files to avoid declaring variables and functions with the same name. See https://github.com/neuronsimulator/nrn/pull/1992
+
