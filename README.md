@@ -29,6 +29,4 @@ José Francisco Gómez González, jfcgomez@ull.edu.es
 
 * 20220924: Update MOD files to avoid declaring variables and functions with the same name. See [https://github.com/neuronsimulator/nrn/pull/1992](https://github.com/neuronsimulator/nrn/pull/1992)
 
----
-
-2025-07-09: Converted README to Markdown.
+* 20250709: Converted README to Markdown.
